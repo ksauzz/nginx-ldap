@@ -3,6 +3,7 @@ FROM debian:jessie
 MAINTAINER Henrik Sachse <t3x7m3@posteo.de>
 
 ENV NGINX_VERSION release-1.11.13
+ENV NGINX_AUTH_LDAP_VERSION 42d195d
 
 # Use jessie-backports for openssl >= 1.0.2
 # This is required by nginx-auth-ldap when ssl_check_cert is turned on.
@@ -25,6 +26,9 @@ RUN mkdir /var/log/nginx \
 	&& mkdir /etc/nginx \
 	&& cd ~ \
 	&& git clone https://github.com/kvspb/nginx-auth-ldap.git \
+	&& cd ~/nginx-auth-ldap \
+	&& git checkout ${NGINX_AUTH_LDAP_VERSION} \
+	&& cd .. \
 	&& git clone https://github.com/nginx/nginx.git \
 	&& cd ~/nginx \
 	&& git checkout tags/${NGINX_VERSION} \
@@ -35,8 +39,8 @@ RUN mkdir /var/log/nginx \
 		--conf-path=/etc/nginx/nginx.conf \ 
 		--sbin-path=/usr/sbin/nginx \ 
 		--pid-path=/var/log/nginx/nginx.pid \ 
-		--error-log-path=/var/log/nginx/error.log \ 
-		--http-log-path=/var/log/nginx/access.log \
+		--error-log-path=/dev/stderr \ 
+		--http-log-path=/dev/stdout \
         --with-stream \
         --with-stream_ssl_module \
         --with-debug \
@@ -50,11 +54,7 @@ RUN mkdir /var/log/nginx \
 	&& cd .. \
 	&& rm -rf nginx-auth-ldap \
 	&& rm -rf nginx \
-	&& wget -O /tmp/dockerize.tar.gz https://github.com/jwilder/dockerize/releases/download/v0.2.0/dockerize-linux-amd64-v0.2.0.tar.gz \
-	&& tar -C /usr/local/bin -xzvf /tmp/dockerize.tar.gz \
-	&& rm -rf /tmp/dockerize.tar.gz
 
 EXPOSE 80 443
 
-COPY run.sh /run.sh
-CMD ["/run.sh"]
+CMD ["nginx", "-g", "daemon off;"]
